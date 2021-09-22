@@ -12,8 +12,92 @@ Here's the plan for the semester:
 library(kableExtra)
 library(tidyverse)
 library(DT)
+library(lubridate)
 ```
 
+
+```{r include = FALSE}
+start_date <- lubridate::as_date("2019-09-03")
+end_date <- lubridate::as_date("2019-12-12")
+dur_weeks <- (start_date %--% end_date) %/% weeks(1)
+meet_days <- c("Monday", "Wednesday", "Friday")
+
+# gets the first monday from any date
+# https://stat.ethz.ch/pipermail/r-help/2011-September/288846.html
+first_monday <- function(x) {
+  as.Date(cut(x, "weeks"))
+}
+
+by_meeting <- function(x, meet_on = c("Monday",
+                                      "Tuesday",
+                                      "Wednesday",
+                                      "Thursday",
+                                      "Friday",
+                                      "Saturday",
+                                      "Sunday")) {
+  meet_on <- match.arg(meet_on, several.ok = TRUE)
+  week_of <- first_monday(x)
+  numeric_days <- wday(first_monday(x))
+  # options: M/Tu/W/Th/Fri/Sat/Sun
+  here <- make_date(day = meet_on, 
+                    month = month(week_of), 
+                    year = year(week_of))
+  enframe(here, name = "class_num", value = "date")
+}
+
+#' takes start_date as input
+make_meets_numeric <- function(x = start_date, 
+                               meet_on = c("Monday",
+                                      "Tuesday",
+                                      "Wednesday",
+                                      "Thursday",
+                                      "Friday",
+                                      "Saturday",
+                                      "Sunday")) {
+  meet_on <- match.arg(meet_on, several.ok = TRUE)
+  # make first week of dates
+  first_week <- first_monday(x) + days(0:6)
+  # subtract from start_date to get numbers from those
+  lookup <- tibble(
+    numbers = (x %--% first_week) / days(1),
+    days = as.character(wday(first_week, label = TRUE, abbr = FALSE))
+  )
+  # construct week one from first_monday plus days
+  week_one <- x
+  days_we_meet <- c()
+  # get month and year from start_date
+  # I know that Monday is first_monday + 0, Tuesday is first_monday + 1
+  )
+
+cal_by_week <- tibble(
+  week_of = begin_week(start_date) + weeks(1:dur_weeks),
+  week_num = rep(1:dur_weeks),
+  date_day = start_date + weeks(1:dur_weeks),
+  week_day = wday(date_day, label = TRUE)
+)
+
+cal_by_meet <- tibble(
+  week_of = rep(begin_week(start_date) + weeks(1:dur_weeks), each = 2),
+  week_num = rep(1:dur_weeks, each = 2)
+)
+```
+
+break it down:
+
+1. I need to construct a full "fake" first_week
+  - Input:
+    - first_date (can be any date in first week)
+    - first_date --> first_monday
+    - first_monday --> first_week (a full week of actual real dates)
+1. I need to construct a real first week
+  - Input:
+    - days of the week that meet (as characters)
+    - first_week (from above)
+    - week_one <- starting from the first_monday + days(c(1, 4)) # where days is a number
+1. I need to construct the full calendar
+  - Input:
+    - week_one (a full week of just dates of meetings)
+    - duration (number of weeks to repeat the pattern in week_one)
 
 ```{r, echo = FALSE}
 schedule <- tribble(~Week, ~Weekday, ~Date, ~Topic,  ~Slides, ~slides_url, ~Labs, ~labs_url,
